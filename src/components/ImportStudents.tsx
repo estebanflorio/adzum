@@ -20,7 +20,7 @@ interface ImportResult {
   errors: { fila: number; nombre: string; motivo: string }[]
 }
 
-const COLUMNAS = ['apellido', 'nombre', 'dni', 'nacimiento', 'legajo']
+
 const PLANTILLA_HEADER = 'Apellido,Nombre,DNI,Nacimiento (DD/MM/AAAA),Legajo (opcional)'
 const PLANTILLA_EJEMPLO = [
   'García,Sofía,50123456,15/03/2021,2025-001',
