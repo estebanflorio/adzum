@@ -20,12 +20,12 @@ interface ImportResult {
   errors: { fila: number; nombre: string; motivo: string }[]
 }
 
-const COLUMNAS = ['apellido', 'nombre', 'dni', 'fecha_nacimiento', 'legajo_nro']
-const PLANTILLA_HEADER = 'apellido,nombre,dni,fecha_nacimiento,legajo_nro'
+const COLUMNAS = ['apellido', 'nombre', 'dni', 'nacimiento', 'legajo']
+const PLANTILLA_HEADER = 'Apellido,Nombre,DNI,Nacimiento (DD/MM/AAAA),Legajo (opcional)'
 const PLANTILLA_EJEMPLO = [
-  'García,Sofía,50123456,2021-03-15,2025-001',
-  'López,Mateo,50234567,2020-11-08,2025-002',
-  'Martínez,Valentina,,2021-07-22,',
+  'García,Sofía,50123456,15/03/2021,2025-001',
+  'López,Mateo,50234567,08/11/2020,2025-002',
+  'Martínez,Valentina,,22/07/2021,',
 ].join('\n')
 
 type Step = 'config' | 'preview' | 'result'
@@ -92,24 +92,35 @@ export default function ImportStudents({ onBack }: Props) {
   }
 
   // ── Parsear CSV ──
+  function normalizarFecha(f: string): string {
+    if (!f) return ''
+    f = f.trim()
+    // DD/MM/AAAA o DD-MM-AAAA
+    const dmY = f.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/)
+    if (dmY) return `${dmY[3]}-${dmY[2].padStart(2,'0')}-${dmY[1].padStart(2,'0')}`
+    // AAAA-MM-DD ya correcto
+    if (/^\d{4}-\d{2}-\d{2}$/.test(f)) return f
+    return f
+  }
+
   function parseCSV(text: string): CSVRow[] {
     const lines = text.trim().split('\n').map(l => l.replace(/\r/g, ''))
     if (lines.length < 2) return []
 
-    // Detectar si primera línea es header
-    const firstLine = lines[0].toLowerCase()
-    const hasHeader = COLUMNAS.some(c => firstLine.includes(c))
+    // Header = primera línea contiene letras
+    const hasHeader = /[a-zA-ZáéíóúÁÉÍÓÚñÑ]/.test(lines[0])
     const dataLines = hasHeader ? lines.slice(1) : lines
 
     return dataLines.filter(l => l.trim()).map(line => {
       const parts = line.split(',').map(p => p.trim().replace(/^"|"$/g, ''))
-      const [apellido = '', nombre = '', dni = '', fecha_nacimiento = '', legajo_nro = ''] = parts
+      const [apellido = '', nombre = '', dni = '', fechaRaw = '', legajo_nro = ''] = parts
+      const fecha_nacimiento = normalizarFecha(fechaRaw)
 
       const row: CSVRow = { apellido, nombre, dni, fecha_nacimiento, legajo_nro }
 
       if (!apellido || !nombre) row._error = 'Nombre y apellido son obligatorios'
-      if (fecha_nacimiento && !/^\d{4}-\d{2}-\d{2}$/.test(fecha_nacimiento))
-        row._error = 'Fecha debe ser AAAA-MM-DD'
+      else if (fecha_nacimiento && !/^\d{4}-\d{2}-\d{2}$/.test(fecha_nacimiento))
+        row._error = `Fecha inválida: "${fechaRaw}" — usá DD/MM/AAAA`
 
       return row
     })
@@ -287,10 +298,10 @@ export default function ImportStudents({ onBack }: Props) {
               <p style={{ fontSize: 13, fontWeight: 500, margin: '0 0 4px', color: t.textPrimary }}>Paso 1 — Descargá la plantilla</p>
               <p style={{ fontSize: 12, color: t.textMuted, margin: '0 0 14px' }}>Completala en Excel y guardala como CSV (UTF-8). Solo nombre y apellido son obligatorios.</p>
               <div style={{ background: t.bg, borderRadius: 8, padding: '10px 14px', fontFamily: 'DM Mono', fontSize: 11, color: t.textMuted, marginBottom: 14, overflowX: 'auto' }}>
-                <div style={{ color: t.green, marginBottom: 4 }}>apellido, nombre, dni, fecha_nacimiento, legajo_nro</div>
-                <div>García, Sofía, 50123456, 2021-03-15, 2025-001</div>
-                <div>López, Mateo, 50234567, 2020-11-08, 2025-002</div>
-                <div style={{ color: t.textMuted }}>Martínez, Valentina, , 2021-07-22, <span style={{ color: t.amber }}>← dni y legajo opcionales</span></div>
+                <div style={{ color: t.green, marginBottom: 4 }}>Apellido, Nombre, DNI, Nacimiento (DD/MM/AAAA), Legajo</div>
+                <div>García, Sofía, 50123456, 15/03/2021, 2025-001</div>
+                <div>López, Mateo, 50234567, 08/11/2020, 2025-002</div>
+                <div style={{ color: t.textMuted }}>Martínez, Valentina, , 22/07/2021, <span style={{ color: t.amber }}>← dni y legajo opcionales</span></div>
               </div>
               <button onClick={downloadTemplate} style={{ ...btnS, display: 'flex', alignItems: 'center', gap: 8 }}>
                 ⬇ Descargar plantilla.csv
