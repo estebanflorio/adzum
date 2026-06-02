@@ -14,6 +14,7 @@ interface Props {
   onGoToAttendance: () => void
   onGoToHistory: () => void
   onGoToAddStudent: () => void
+  onGoToImportStudents: () => void
   onGoToSettings: () => void
 }
 
@@ -26,7 +27,7 @@ interface Stats {
   alertas_critical: number
 }
 
-export default function Dashboard({ session, onGoToAttendance, onGoToHistory, onGoToAddStudent, onGoToSettings }: Props) {
+export default function Dashboard({ session, onGoToAttendance, onGoToHistory, onGoToAddStudent, onGoToImportStudents, onGoToSettings }: Props) {
   const { theme: t, isDark, toggleTheme } = useTheme()
   const [user, setUser]         = useState<UserProfile | null>(null)
   const [stats, setStats]       = useState<Stats | null>(null)
@@ -73,6 +74,7 @@ export default function Dashboard({ session, onGoToAttendance, onGoToHistory, on
     { label: '📋 Tomar asistencia', fn: onGoToAttendance },
     { label: '📅 Historial', fn: onGoToHistory },
     { label: '➕ Agregar alumno', fn: onGoToAddStudent },
+    { label: '📂 Importar CSV', fn: onGoToImportStudents },
     { label: '⚙ Configuración', fn: onGoToSettings },
   ]
 
@@ -80,6 +82,7 @@ export default function Dashboard({ session, onGoToAttendance, onGoToHistory, on
     { icon: '📋', label: 'Asistencia', fn: onGoToAttendance },
     { icon: '📅', label: 'Historial', fn: onGoToHistory },
     { icon: '➕', label: 'Alumno', fn: onGoToAddStudent },
+    { icon: '📂', label: 'Importar', fn: onGoToImportStudents },
     { icon: '⚙️', label: 'Config', fn: onGoToSettings },
   ]
 
@@ -92,7 +95,7 @@ export default function Dashboard({ session, onGoToAttendance, onGoToHistory, on
         button, a, [role="button"] { cursor: pointer; }
         .dash-stats { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 20px; }
         .dash-panels { display: grid; grid-template-columns: 1fr; gap: 16px; }
-        .dash-nav { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 20px; }
+        .dash-nav { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; margin-bottom: 20px; }
         .dash-header-btns { display: none; }
         @media (min-width: 768px) {
           .dash-stats { grid-template-columns: repeat(4,1fr); }
