@@ -191,11 +191,6 @@ export default function ImportStudents({ onBack }: Props) {
   }
 
   // ── Estilos base ──
-  const inp: React.CSSProperties = {
-    padding: '9px 12px', fontSize: 13, borderRadius: 8,
-    border: `1px solid ${t.inputBorder}`, background: t.inputBg,
-    color: t.textPrimary, outline: 'none', fontFamily: 'DM Sans', boxSizing: 'border-box' as const,
-  }
   const btnP: React.CSSProperties = {
     padding: '9px 20px', borderRadius: 8, border: 'none',
     background: t.green, color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'DM Sans',
