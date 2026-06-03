@@ -23,6 +23,9 @@ export default function Settings({ onBack }: Props) {
   const [saving, setSaving]     = useState(false)
   const [saved, setSaved]       = useState(false)
   const [error, setError]       = useState<string | null>(null)
+  const [logoUrl, setLogoUrl]   = useState<string | null>(null)
+  const [logoUploading, setLogoUploading] = useState(false)
+  const [logoError, setLogoError]         = useState<string | null>(null)
 
   // Formulario escuela
   const [schoolForm, setSchoolForm] = useState({ nombre: '', cue: '', direccion: '', turno: 'mañana' })
@@ -45,6 +48,12 @@ export default function Settings({ onBack }: Props) {
       if (schoolData) {
         setSchool(schoolData)
         setSchoolForm({ nombre: schoolData.nombre ?? '', cue: schoolData.cue ?? '', direccion: schoolData.direccion ?? '', turno: schoolData.turno ?? 'mañana' })
+        // Cargar logo si existe
+        const { data: logoData } = supabase.storage.from('school-logos').getPublicUrl(`${profile.school_id}/logo.png`)
+        if (logoData?.publicUrl) {
+          // Verificar que el archivo existe con un timestamp para evitar cache
+          setLogoUrl(logoData.publicUrl + '?t=' + Date.now())
+        }
       }
 
       const { data: yearsData } = await supabase.from('school_years').select('*').eq('school_id', profile.school_id).order('anio', { ascending: false })
@@ -57,6 +66,39 @@ export default function Settings({ onBack }: Props) {
     }
     load()
   }, [])
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !school) return
+    if (!file.name.toLowerCase().endsWith('.png')) {
+      setLogoError('Solo se aceptan archivos PNG sin fondo.')
+      return
+    }
+    if (file.size > 500 * 1024) {
+      setLogoError('El archivo no puede superar 500KB.')
+      return
+    }
+    setLogoUploading(true)
+    setLogoError(null)
+    const { error: uploadErr } = await supabase.storage
+      .from('school-logos')
+      .upload(`${school.id}/logo.png`, file, { upsert: true, contentType: 'image/png' })
+    if (uploadErr) {
+      setLogoError('Error al subir: ' + uploadErr.message)
+    } else {
+      const { data } = supabase.storage.from('school-logos').getPublicUrl(`${school.id}/logo.png`)
+      setLogoUrl(data.publicUrl + '?t=' + Date.now())
+    }
+    setLogoUploading(false)
+  }
+
+  async function handleLogoDelete() {
+    if (!school) return
+    setLogoUploading(true)
+    await supabase.storage.from('school-logos').remove([`${school.id}/logo.png`])
+    setLogoUrl(null)
+    setLogoUploading(false)
+  }
 
   async function saveSchool() {
     if (!school) return
@@ -245,6 +287,44 @@ export default function Settings({ onBack }: Props) {
                     <button onClick={saveSchool} disabled={saving} style={btnP}>{saving ? 'Guardando...' : 'Guardar cambios'}</button>
                     {saved && <span style={{ fontSize: 12, color: t.green }}>✓ Guardado</span>}
                   </div>
+                </div>
+
+                {/* Logo */}
+                <div style={card}>
+                  <p style={cardTitle}>Logotipo del establecimiento</p>
+                  <p style={{ fontSize: 12, color: t.textMuted, margin: '0 0 16px', lineHeight: 1.6 }}>
+                    El logo aparece en todos los informes y documentos generados por la app.<br />
+                    <strong>Formato requerido:</strong> PNG sin fondo (transparente) · <strong>Tamaño recomendado:</strong> 300×300 px · <strong>Máximo:</strong> 500 KB
+                  </p>
+
+                  {/* Preview actual */}
+                  {logoUrl && (
+                    <div style={{ marginBottom: 16, padding: 16, background: isDark ? '#1a1a2e' : '#f0f0f0', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 16, border: `1px solid ${t.border}` }}>
+                      <img
+                        src={logoUrl}
+                        alt="Logo"
+                        style={{ width: 80, height: 80, objectFit: 'contain' }}
+                        onError={() => setLogoUrl(null)}
+                      />
+                      <div>
+                        <p style={{ margin: '0 0 8px', fontSize: 12, color: t.textMuted }}>Logo actual</p>
+                        <button onClick={handleLogoDelete} disabled={logoUploading}
+                          style={{ fontSize: 11, padding: '4px 12px', borderRadius: 6, border: `1px solid ${t.red}60`, background: 'transparent', color: t.red, cursor: 'pointer' }}>
+                          🗑 Eliminar logo
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Upload */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <label style={{ ...btnP, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer', opacity: logoUploading ? 0.6 : 1 }}>
+                      {logoUploading ? 'Subiendo...' : logoUrl ? '🔄 Cambiar logo' : '📤 Subir logo PNG'}
+                      <input type="file" accept=".png,image/png" onChange={handleLogoUpload} style={{ display: 'none' }} disabled={logoUploading} />
+                    </label>
+                    <span style={{ fontSize: 11, color: t.textMuted }}>Solo PNG · sin fondo · 300×300 px recomendado</span>
+                  </div>
+                  {logoError && <p style={{ fontSize: 12, color: t.red, margin: '10px 0 0' }}>{logoError}</p>}
                 </div>
               </div>
             )}

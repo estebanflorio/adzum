@@ -24,6 +24,7 @@ export default function Reports({ onBack }: Props) {
 
   const [reportType, setReportType]     = useState<ReportType>('menu')
   const [schoolInfo, setSchoolInfo]     = useState<SchoolInfo>({ nombre: '', direccion: '', cue: '', turno: '' })
+  const [logoUrl, setLogoUrl]           = useState<string | null>(null)
   const [grades, setGrades]             = useState<Grade[]>([])
   const [divisions, setDivisions]       = useState<Division[]>([])
   const [schoolYears, setSchoolYears]   = useState<SchoolYear[]>([])
@@ -56,7 +57,12 @@ export default function Reports({ onBack }: Props) {
         supabase.from('grades').select('id, nombre').eq('school_id', profile.school_id).order('orden'),
       ])
 
-      if (school) setSchoolInfo(school)
+      if (school) {
+        setSchoolInfo(school)
+        // Cargar logo
+        const { data: logoData } = supabase.storage.from('school-logos').getPublicUrl(`${profile.school_id}/logo.png`)
+        if (logoData?.publicUrl) setLogoUrl(logoData.publicUrl + '?t=' + Date.now())
+      }
       if (sysData && sysData.length > 0) {
         setSchoolYears(sysData)
         setSelectedYear(sysData[0])
@@ -255,11 +261,14 @@ export default function Reports({ onBack }: Props) {
     <div style={{ marginBottom: 24, borderRadius: 12, overflow: 'hidden', border: `2px solid ${t.border}` }}>
       {/* Banda superior con gradiente */}
       <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d6a4f 100%)', padding: '20px 28px', display: 'flex', alignItems: 'center', gap: 20 }}>
-        {/* Escudo / iniciales */}
-        <div style={{ width: 64, height: 64, borderRadius: 12, background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <span style={{ fontSize: 22, fontWeight: 800, color: '#fff', fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: '-0.03em' }}>
-            {schoolInfo.nombre ? schoolInfo.nombre.split(' ').filter(w => w.length > 2).slice(0,2).map(w => w[0]).join('').toUpperCase() : 'JI'}
-          </span>
+        {/* Logo o iniciales */}
+        <div style={{ width: 64, height: 64, borderRadius: 12, background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden', padding: logoUrl ? 4 : 0 }}>
+          {logoUrl
+            ? <img src={logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} onError={() => setLogoUrl(null)} />
+            : <span style={{ fontSize: 22, fontWeight: 800, color: '#fff', fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: '-0.03em' }}>
+                {schoolInfo.nombre ? schoolInfo.nombre.split(' ').filter(w => w.length > 2).slice(0,2).map(w => w[0]).join('').toUpperCase() : 'JI'}
+              </span>
+          }
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', fontFamily: "'Plus Jakarta Sans', sans-serif", marginBottom: 2 }}>
@@ -526,10 +535,11 @@ export default function Reports({ onBack }: Props) {
             <div key={a.enrollment_id} className="notif-card" style={{ border: `1px solid ${t.border}`, borderRadius: 12, padding: 28, marginBottom: 24, background: t.cardBg }}>
               {/* Encabezado profesional notificación */}
               <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d6a4f 100%)', borderRadius: '10px 10px 0 0', margin: '-28px -28px 20px -28px', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 8, background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>
-                    {schoolInfo.nombre ? schoolInfo.nombre.split(' ').filter((w: string) => w.length > 2).slice(0,2).map((w: string) => w[0]).join('').toUpperCase() : 'JI'}
-                  </span>
+                <div style={{ width: 44, height: 44, borderRadius: 8, background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden', padding: logoUrl ? 3 : 0 }}>
+                  {logoUrl
+                    ? <img src={logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} onError={() => setLogoUrl(null)} />
+                    : <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>{schoolInfo.nombre ? schoolInfo.nombre.split(' ').filter((w: string) => w.length > 2).slice(0,2).map((w: string) => w[0]).join('').toUpperCase() : 'JI'}</span>
+                  }
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{schoolInfo.nombre || 'Jardín de Infantes'}</div>
@@ -753,10 +763,11 @@ export default function Reports({ onBack }: Props) {
             <div key={a.enrollment_id} className="boletin-card" style={{ border: `1px solid ${t.border}`, borderRadius: 12, padding: 28, marginBottom: 24, background: t.cardBg }}>
               {/* Encabezado profesional boletín */}
               <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d6a4f 100%)', borderRadius: '10px 10px 0 0', margin: '-28px -28px 20px -28px', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 8, background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>
-                    {schoolInfo.nombre ? schoolInfo.nombre.split(' ').filter((w: string) => w.length > 2).slice(0,2).map((w: string) => w[0]).join('').toUpperCase() : 'JI'}
-                  </span>
+                <div style={{ width: 44, height: 44, borderRadius: 8, background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden', padding: logoUrl ? 3 : 0 }}>
+                  {logoUrl
+                    ? <img src={logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} onError={() => setLogoUrl(null)} />
+                    : <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>{schoolInfo.nombre ? schoolInfo.nombre.split(' ').filter((w: string) => w.length > 2).slice(0,2).map((w: string) => w[0]).join('').toUpperCase() : 'JI'}</span>
+                  }
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{schoolInfo.nombre || 'Jardín de Infantes'}</div>
