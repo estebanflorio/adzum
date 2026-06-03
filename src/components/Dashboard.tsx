@@ -11,10 +11,11 @@ import AdzumLogo from './AdzumLogo'
 
 interface Props {
   session: Session
+  userRole?: string
   onGoToAttendance: () => void
   onGoToHistory: () => void
-  onGoToAddStudent: () => void
-  onGoToImportStudents: () => void
+  onGoToAddStudent?: () => void
+  onGoToImportStudents?: () => void
   onGoToReports: () => void
   onGoToSettings: () => void
 }
@@ -28,7 +29,7 @@ interface Stats {
   alertas_critical: number
 }
 
-export default function Dashboard({ session, onGoToAttendance, onGoToHistory, onGoToAddStudent, onGoToImportStudents, onGoToReports, onGoToSettings }: Props) {
+export default function Dashboard({ session, userRole = 'docente', onGoToAttendance, onGoToHistory, onGoToAddStudent, onGoToImportStudents, onGoToReports, onGoToSettings }: Props) {
   const { theme: t, isDark, toggleTheme } = useTheme()
   const [user, setUser]         = useState<UserProfile | null>(null)
   const [stats, setStats]       = useState<Stats | null>(null)
@@ -74,8 +75,8 @@ export default function Dashboard({ session, onGoToAttendance, onGoToHistory, on
   const navItems = [
     { label: '📋 Tomar asistencia', fn: onGoToAttendance },
     { label: '📅 Historial', fn: onGoToHistory },
-    { label: '➕ Agregar alumno', fn: onGoToAddStudent },
-    { label: '📂 Importar CSV', fn: onGoToImportStudents },
+    ...(onGoToAddStudent      ? [{ label: '➕ Agregar alumno', fn: onGoToAddStudent }]      : []),
+    ...(onGoToImportStudents  ? [{ label: '📂 Importar CSV',   fn: onGoToImportStudents }]  : []),
     { label: '📊 Informes', fn: onGoToReports },
     { label: '⚙ Configuración', fn: onGoToSettings },
   ]
@@ -83,8 +84,8 @@ export default function Dashboard({ session, onGoToAttendance, onGoToHistory, on
   const mobileNav = [
     { icon: '📋', label: 'Asistencia', fn: onGoToAttendance },
     { icon: '📅', label: 'Historial', fn: onGoToHistory },
-    { icon: '➕', label: 'Alumno', fn: onGoToAddStudent },
-    { icon: '📂', label: 'Importar', fn: onGoToImportStudents },
+    ...(onGoToAddStudent     ? [{ icon: '➕', label: 'Alumno',   fn: onGoToAddStudent }]     : []),
+    ...(onGoToImportStudents ? [{ icon: '📂', label: 'Importar', fn: onGoToImportStudents }] : []),
     { icon: '📊', label: 'Informes', fn: onGoToReports },
     { icon: '⚙️', label: 'Config', fn: onGoToSettings },
   ]

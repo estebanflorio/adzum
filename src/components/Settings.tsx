@@ -141,16 +141,18 @@ export default function Settings({ onBack }: Props) {
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, rol } : u))
   }
 
-  async function createUser() {
+  async function handleCreateUser() {
     if (!currentUser) return
     setSaving(true); setError(null)
     try {
-      // Crear en auth
-      const { data: authData, error: authErr } = await supabase.auth.admin.createUser({ email: newUser.email, password: newUser.password, email_confirm: true })
-      if (authErr) throw authErr
-      // Crear perfil
-      const { error: profileErr } = await supabase.from('users').insert({ id: authData.user.id, school_id: currentUser.school_id, nombre: newUser.nombre, apellido: newUser.apellido, email: newUser.email, rol: newUser.rol })
-      if (profileErr) throw profileErr
+      const { createUser } = await import('../services/usersService')
+      await createUser(currentUser.school_id, {
+        email:    newUser.email,
+        password: newUser.password,
+        nombre:   newUser.nombre,
+        apellido: newUser.apellido,
+        rol:      newUser.rol,
+      })
       const userList = await getSchoolUsers(currentUser.school_id)
       setUsers(userList)
       setShowNewUser(false)
@@ -387,7 +389,14 @@ export default function Settings({ onBack }: Props) {
             {/* ─── Usuarios ─── */}
             {section === 'usuarios' && (
               <div>
-                <h2 style={{ fontSize: 18, fontWeight: 300, margin: '0 0 20px' }}>Usuarios del sistema</h2>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                  <h2 style={{ fontSize: 18, fontWeight: 300, margin: 0 }}>Usuarios del sistema</h2>
+                  {currentUser && !['director','admin'].includes(currentUser.rol) && (
+                    <span style={{ fontSize: 11, padding: '4px 12px', borderRadius: 20, background: t.amberBg, color: t.amber, fontFamily: 'DM Mono' }}>
+                      Solo lectura — tu rol: {currentUser.rol}
+                    </span>
+                  )}
+                </div>
 
                 {users.map(u => (
                   <div key={u.id} style={{ ...card, display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px' }}>
@@ -415,7 +424,7 @@ export default function Settings({ onBack }: Props) {
                   </div>
                 ))}
 
-                {!showNewUser
+                {currentUser && ['director','admin'].includes(currentUser.rol) && !showNewUser
                   ? <button onClick={() => setShowNewUser(true)} style={{ ...btnS, width: '100%', textAlign: 'center' }}>+ Agregar usuario</button>
                   : (
                     <div style={card}>
@@ -438,7 +447,7 @@ export default function Settings({ onBack }: Props) {
                       {error && <p style={{ fontSize: 12, color: t.red, margin: '10px 0 0' }}>{error}</p>}
                       <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
                         <button onClick={() => setShowNewUser(false)} style={btnS}>Cancelar</button>
-                        <button onClick={createUser} disabled={saving || !newUser.nombre || !newUser.email || !newUser.password}
+                        <button onClick={handleCreateUser} disabled={saving || !newUser.nombre || !newUser.email || !newUser.password}
                           style={{ ...btnP, opacity: saving || !newUser.nombre || !newUser.email || !newUser.password ? 0.5 : 1 }}>
                           {saving ? 'Creando...' : 'Crear usuario'}
                         </button>
