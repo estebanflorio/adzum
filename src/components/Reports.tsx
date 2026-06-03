@@ -5,7 +5,7 @@ import { useTheme } from '../lib/ThemeContext'
 interface Props { onBack: () => void }
 
 // ── Tipos ─────────────────────────────────────────────────────
-interface SchoolInfo { nombre: string; direccion: string; cue: string; distrito: string }
+interface SchoolInfo { nombre: string; direccion: string; cue: string; turno: string }
 interface Alumno { enrollment_id: string; student_id: string; nombre: string; apellido: string; dni: string | null }
 interface DiaAsistencia { fecha: string; estado: 'presente' | 'ausente' | 'tardanza' | 'justificado' | null }
 interface AlumnoConAsistencia extends Alumno { dias: DiaAsistencia[]; presentes: number; ausentes: number; tardanzas: number; justificados: number; porcentaje: number }
@@ -23,7 +23,7 @@ export default function Reports({ onBack }: Props) {
   const { theme: t, isDark, toggleTheme } = useTheme()
 
   const [reportType, setReportType]     = useState<ReportType>('menu')
-  const [schoolInfo, setSchoolInfo]     = useState<SchoolInfo>({ nombre: '', direccion: '', cue: '', distrito: '' })
+  const [schoolInfo, setSchoolInfo]     = useState<SchoolInfo>({ nombre: '', direccion: '', cue: '', turno: '' })
   const [grades, setGrades]             = useState<Grade[]>([])
   const [divisions, setDivisions]       = useState<Division[]>([])
   const [schoolYears, setSchoolYears]   = useState<SchoolYear[]>([])
@@ -51,7 +51,7 @@ export default function Reports({ onBack }: Props) {
       if (!profile) return
 
       const [{ data: school }, { data: sysData }, { data: gradesData }] = await Promise.all([
-        supabase.from('schools').select('nombre, direccion, cue, distrito').eq('id', profile.school_id).single(),
+        supabase.from('schools').select('nombre, direccion, cue, turno').eq('id', profile.school_id).single(),
         supabase.from('school_years').select('id, anio').eq('school_id', profile.school_id).order('anio', { ascending: false }),
         supabase.from('grades').select('id, nombre').eq('school_id', profile.school_id).order('orden'),
       ])
@@ -250,16 +250,44 @@ export default function Reports({ onBack }: Props) {
   // ────────────────────────────────────────────────────────────
   // CABECERA de impresión (aparece en todos los PDFs)
   // ────────────────────────────────────────────────────────────
+  // ── Encabezado profesional (pantalla + impresión) ──
   const PrintHeader = ({ subtitulo }: { subtitulo: string }) => (
-    <div className="print-only" style={{ display: 'none', marginBottom: 16 }}>
-      <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: 8, marginBottom: 8 }}>
-        <div style={{ fontSize: 14, fontWeight: 700 }}>{schoolInfo.nombre || 'Jardín de Infantes'}</div>
-        {schoolInfo.cue && <div style={{ fontSize: 11 }}>CUE: {schoolInfo.cue} {schoolInfo.distrito ? `— Distrito: ${schoolInfo.distrito}` : ''}</div>}
-        {schoolInfo.direccion && <div style={{ fontSize: 11 }}>{schoolInfo.direccion}</div>}
+    <div style={{ marginBottom: 24, borderRadius: 12, overflow: 'hidden', border: `2px solid ${t.border}` }}>
+      {/* Banda superior con gradiente */}
+      <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d6a4f 100%)', padding: '20px 28px', display: 'flex', alignItems: 'center', gap: 20 }}>
+        {/* Escudo / iniciales */}
+        <div style={{ width: 64, height: 64, borderRadius: 12, background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <span style={{ fontSize: 22, fontWeight: 800, color: '#fff', fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: '-0.03em' }}>
+            {schoolInfo.nombre ? schoolInfo.nombre.split(' ').filter(w => w.length > 2).slice(0,2).map(w => w[0]).join('').toUpperCase() : 'JI'}
+          </span>
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', fontFamily: "'Plus Jakarta Sans', sans-serif", marginBottom: 2 }}>
+            {schoolInfo.nombre || 'Jardín de Infantes'}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px' }}>
+            {schoolInfo.cue && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)' }}>CUE: {schoolInfo.cue}</span>}
+            {schoolInfo.turno && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)' }}>Turno: {schoolInfo.turno}</span>}
+            {schoolInfo.direccion && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)' }}>📍 {schoolInfo.direccion}</span>}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>Provincia de Buenos Aires</div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>DGCyE</div>
+        </div>
       </div>
-      <div style={{ fontSize: 12, fontWeight: 600, textAlign: 'center', marginBottom: 4 }}>{subtitulo}</div>
-      <div style={{ fontSize: 11, textAlign: 'center', color: '#555' }}>
-        {selectedGrade?.nombre} — División {selectedDiv?.nombre} — {mesNombre} {anioActual}
+      {/* Banda de datos del informe */}
+      <div style={{ background: t.cardBg, padding: '12px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: t.textPrimary, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{subtitulo}</div>
+          <div style={{ fontSize: 12, color: t.textMuted, marginTop: 2 }}>
+            {selectedGrade?.nombre} — División {selectedDiv?.nombre}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: t.textPrimary }}>{mesNombre} {anioActual}</div>
+          <div style={{ fontSize: 11, color: t.textMuted }}>Ciclo lectivo {anioActual}</div>
+        </div>
       </div>
     </div>
   )
@@ -496,13 +524,26 @@ export default function Reports({ onBack }: Props) {
           {/* Notificaciones imprimibles */}
           {dataLoaded && reportData.filter(a => selectedAlumnos.includes(a.enrollment_id)).map(a => (
             <div key={a.enrollment_id} className="notif-card" style={{ border: `1px solid ${t.border}`, borderRadius: 12, padding: 28, marginBottom: 24, background: t.cardBg }}>
-              <div style={{ textAlign: 'center', borderBottom: `2px solid ${t.border}`, paddingBottom: 12, marginBottom: 16 }}>
-                <div style={{ fontWeight: 700, fontSize: 16 }}>{schoolInfo.nombre || 'Jardín de Infantes'}</div>
-                {schoolInfo.cue && <div style={{ fontSize: 12, color: t.textMuted }}>CUE: {schoolInfo.cue}</div>}
-              </div>
-              <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>NOTIFICACIÓN DE INASISTENCIAS</div>
-                <div style={{ fontSize: 12, color: t.textMuted }}>{mesNombre} {anioActual}</div>
+              {/* Encabezado profesional notificación */}
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d6a4f 100%)', borderRadius: '10px 10px 0 0', margin: '-28px -28px 20px -28px', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 8, background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>
+                    {schoolInfo.nombre ? schoolInfo.nombre.split(' ').filter((w: string) => w.length > 2).slice(0,2).map((w: string) => w[0]).join('').toUpperCase() : 'JI'}
+                  </span>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{schoolInfo.nombre || 'Jardín de Infantes'}</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)' }}>
+                    {schoolInfo.cue ? `CUE: ${schoolInfo.cue}` : ''}
+                    {schoolInfo.cue && schoolInfo.turno ? ' · ' : ''}
+                    {schoolInfo.turno ? `Turno ${schoolInfo.turno}` : ''}
+                    {schoolInfo.direccion ? ` · ${schoolInfo.direccion}` : ''}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#fff', opacity: 0.9 }}>NOTIFICACIÓN DE INASISTENCIAS</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)' }}>{mesNombre} {anioActual}</div>
+                </div>
               </div>
               <p style={{ fontSize: 13, marginBottom: 16, lineHeight: 1.7 }}>
                 Por medio de la presente, se notifica a los padres / tutores del/la alumno/a <strong>{a.apellido}, {a.nombre}</strong>, de la {selectedGrade?.nombre} — División {selectedDiv?.nombre}, que durante el mes de <strong>{mesNombre}</strong> presentó <strong>{a.ausentes} inasistencia{a.ausentes !== 1 ? 's' : ''}</strong>{a.tardanzas > 0 ? ` y ${a.tardanzas} tardanza${a.tardanzas !== 1 ? 's' : ''}` : ''}, acumulando un porcentaje de asistencia del <strong style={{ color: a.porcentaje < 70 ? '#ef4444' : '#f59e0b' }}>{a.porcentaje}%</strong>.
@@ -710,10 +751,26 @@ export default function Reports({ onBack }: Props) {
           </div>
           {dataLoaded && reportData.filter(a => selectedAlumnos.includes(a.enrollment_id)).map(a => (
             <div key={a.enrollment_id} className="boletin-card" style={{ border: `1px solid ${t.border}`, borderRadius: 12, padding: 28, marginBottom: 24, background: t.cardBg }}>
-              <div style={{ textAlign: 'center', borderBottom: `2px solid ${t.border}`, paddingBottom: 12, marginBottom: 16 }}>
-                <div style={{ fontWeight: 700, fontSize: 16 }}>{schoolInfo.nombre || 'Jardín de Infantes'}</div>
-                <div style={{ fontSize: 13, fontWeight: 600, marginTop: 4 }}>BOLETÍN DE ASISTENCIA</div>
-                <div style={{ fontSize: 12, color: t.textMuted }}>{mesNombre} {anioActual}</div>
+              {/* Encabezado profesional boletín */}
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d6a4f 100%)', borderRadius: '10px 10px 0 0', margin: '-28px -28px 20px -28px', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 8, background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>
+                    {schoolInfo.nombre ? schoolInfo.nombre.split(' ').filter((w: string) => w.length > 2).slice(0,2).map((w: string) => w[0]).join('').toUpperCase() : 'JI'}
+                  </span>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{schoolInfo.nombre || 'Jardín de Infantes'}</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)' }}>
+                    {schoolInfo.cue ? `CUE: ${schoolInfo.cue}` : ''}
+                    {schoolInfo.cue && schoolInfo.turno ? ' · ' : ''}
+                    {schoolInfo.turno ? `Turno ${schoolInfo.turno}` : ''}
+                    {schoolInfo.direccion ? ` · ${schoolInfo.direccion}` : ''}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#fff', opacity: 0.9 }}>BOLETÍN DE ASISTENCIA</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)' }}>{mesNombre} {anioActual}</div>
+                </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
                 <div>
