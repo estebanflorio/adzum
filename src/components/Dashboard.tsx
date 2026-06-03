@@ -148,7 +148,16 @@ export default function Dashboard({ session, userRole = 'docente', onGoToAttenda
       </div>
 
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: '24px 16px' }}>
-        <h1 style={{ fontSize: 22, fontWeight: 600, margin: '0 0 2px' }}>Panel de la directora</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 600, margin: 0 }}>
+            {userRole === 'director' ? 'Panel de la directora' : userRole === 'admin' ? 'Panel de administración' : 'Panel docente'}
+          </h1>
+          {userRole !== 'director' && (
+            <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: t.amberBg, color: t.amber, fontFamily: 'DM Mono', border: `1px solid ${t.amber}40` }}>
+              {userRole}
+            </span>
+          )}
+        </div>
         <p style={{ fontSize: 12, color: t.textMuted, margin: '0 0 20px', fontFamily: 'DM Mono', textTransform: 'capitalize' }}>{fechaDisplay} — {user?.nombre} {user?.apellido}</p>
 
         {/* Mobile nav */}
