@@ -153,10 +153,14 @@ export default function Settings({ onBack }: Props) {
         apellido: newUser.apellido,
         rol:      newUser.rol,
       })
+      // Pequeña pausa para que Supabase propague el insert
+      await new Promise(r => setTimeout(r, 800))
       const userList = await getSchoolUsers(currentUser.school_id)
       setUsers(userList)
       setShowNewUser(false)
       setNewUser({ nombre: '', apellido: '', email: '', password: '', rol: 'preceptor' })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
     } catch (e: any) {
       setError(e.message ?? 'Error al crear usuario')
     }
