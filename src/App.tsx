@@ -7,9 +7,10 @@ import AttendanceSheet from './components/AttendanceSheet'
 import StudentHistory from './components/StudentHistory'
 import AddStudent from './components/AddStudent'
 import ImportStudents from './components/ImportStudents'
+import Reports from './components/Reports'
 import Settings from './components/Settings'
 
-type View = 'dashboard' | 'attendance' | 'history' | 'add-student' | 'import-students' | 'settings'
+type View = 'dashboard' | 'attendance' | 'history' | 'add-student' | 'import-students' | 'reports' | 'settings'
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -37,6 +38,7 @@ export default function App() {
   if (view === 'history')          return <StudentHistory onBack={back} />
   if (view === 'add-student')      return <AddStudent onBack={back} />
   if (view === 'import-students')  return <ImportStudents onBack={back} />
+  if (view === 'reports')           return <Reports onBack={back} />
   if (view === 'settings')         return <Settings onBack={back} />
 
   return (
@@ -46,6 +48,7 @@ export default function App() {
       onGoToHistory={() => setView('history')}
       onGoToAddStudent={() => setView('add-student')}
       onGoToImportStudents={() => setView('import-students')}
+      onGoToReports={() => setView('reports')}
       onGoToSettings={() => setView('settings')}
     />
   )
