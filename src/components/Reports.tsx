@@ -27,14 +27,12 @@ export default function Reports({ onBack }: Props) {
   const [grades, setGrades]             = useState<Grade[]>([])
   const [divisions, setDivisions]       = useState<Division[]>([])
   const [schoolYears, setSchoolYears]   = useState<SchoolYear[]>([])
-  const [schoolId, setSchoolId]         = useState('')
 
   // Filtros
   const [selectedGrade, setSelectedGrade]     = useState<Grade | null>(null)
   const [selectedDiv, setSelectedDiv]         = useState<Division | null>(null)
   const [selectedYear, setSelectedYear]       = useState<SchoolYear | null>(null)
   const [selectedMonth, setSelectedMonth]     = useState<number>(new Date().getMonth() + 1)
-  const [selectedAlumno, setSelectedAlumno]   = useState<AlumnoConAsistencia | null>(null)
   const [selectedAlumnos, setSelectedAlumnos] = useState<string[]>([])
 
   // Datos del reporte
@@ -51,7 +49,6 @@ export default function Reports({ onBack }: Props) {
       if (!user) return
       const { data: profile } = await supabase.from('users').select('school_id').eq('id', user.id).single()
       if (!profile) return
-      setSchoolId(profile.school_id)
 
       const [{ data: school }, { data: sysData }, { data: gradesData }] = await Promise.all([
         supabase.from('schools').select('nombre, direccion, cue, distrito').eq('id', profile.school_id).single(),
